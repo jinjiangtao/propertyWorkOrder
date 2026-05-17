@@ -75,7 +75,7 @@ import { ElMessage } from 'element-plus'
 import { repairAPI } from '@/api'
 
 const router = useRouter()
-const workerId = ref(localStorage.getItem('workerId') || '')
+const workerId = ref(parseInt(localStorage.getItem('workerId')) || 0)
 const workerName = ref(localStorage.getItem('workerName') || '')
 const skillType = ref(localStorage.getItem('workerSkillType') || '')
 const orders = ref([])

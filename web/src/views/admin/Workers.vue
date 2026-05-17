@@ -74,7 +74,7 @@
           <el-input v-model="workerForm.name" placeholder="请输入姓名" />
         </el-form-item>
         <el-form-item label="手机号" prop="phone">
-          <el-input v-model="workerForm.phone" placeholder="请输入手机号" />
+          <el-input v-model="workerForm.phone" placeholder="请输入手机号（11位，以1开头）" />
         </el-form-item>
         <el-form-item label="密码" prop="password">
           <el-input v-model="workerForm.password" type="password" placeholder="请输入密码" />
@@ -100,7 +100,7 @@
           <el-input v-model="editForm.name" placeholder="请输入姓名" />
         </el-form-item>
         <el-form-item label="手机号" prop="phone">
-          <el-input v-model="editForm.phone" placeholder="请输入手机号" />
+          <el-input v-model="editForm.phone" placeholder="请输入手机号（11位，以1开头）" />
         </el-form-item>
         <el-form-item label="擅长工种" prop="skillType">
           <el-select v-model="editForm.skillType" placeholder="请选择工种">
@@ -151,17 +151,28 @@ const editForm = reactive({
   skillType: ''
 })
 
+const validatePhone = (rule, value, callback) => {
+  const phoneRegex = /^1[3-9]\d{9}$/
+  if (!value) {
+    callback(new Error('请输入手机号'))
+  } else if (!phoneRegex.test(value)) {
+    callback(new Error('请输入正确的手机号（11位，以1开头）'))
+  } else {
+    callback()
+  }
+}
+
 const rules = {
   workNo: [{ required: true, message: '请输入工号', trigger: 'blur' }],
   name: [{ required: true, message: '请输入姓名', trigger: 'blur' }],
-  phone: [{ required: true, message: '请输入手机号', trigger: 'blur' }],
+  phone: [{ required: true, validator: validatePhone, trigger: 'blur' }],
   password: [{ required: true, message: '请输入密码', trigger: 'blur' }],
   skillType: [{ required: true, message: '请选择工种', trigger: 'change' }]
 }
 
 const editRules = {
   name: [{ required: true, message: '请输入姓名', trigger: 'blur' }],
-  phone: [{ required: true, message: '请输入手机号', trigger: 'blur' }],
+  phone: [{ required: true, validator: validatePhone, trigger: 'blur' }],
   skillType: [{ required: true, message: '请选择工种', trigger: 'change' }]
 }
 

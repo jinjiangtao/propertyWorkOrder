@@ -213,7 +213,7 @@ const handleConfirmAssign = async () => {
   }
   
   try {
-    const response = await repairAPI.assignWorker(selectedRepair.value.id, assignForm.value.workerId)
+    const response = await repairAPI.assignWorker(selectedRepair.value.id, parseInt(assignForm.value.workerId))
     if (response.success) {
       ElMessage.success('派单成功')
       showAssignDialog.value = false
