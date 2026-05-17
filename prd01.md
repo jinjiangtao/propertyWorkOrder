@@ -34,6 +34,11 @@
       访问 http://localhost:8080/user 前台用户页面
 
 第二轮
+交换过程中文显示
 通过 http://localhost:8080/admin/login 跳转到登录页面，然后刷新这个页面就空白了，解决这个问题。
 http://localhost:8080/user  页面也有同样的问题。
 user 页面改成h5-vue3的用户表达提交的样式， 在手机中展示
+
+第3轮
+现在http://localhost:8080/user 和http://localhost:8080/admin 页面不能访问了，解决这个问题。 
+解决后页面可以正常访问， 所有页面强制刷新不空白。

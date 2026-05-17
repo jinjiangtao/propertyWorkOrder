@@ -23,7 +23,9 @@ func main() {
 	frontendDir := filepath.Join("..", "web", "dist")
 
 	if _, err := os.Stat(frontendDir); err == nil {
+		r.GET("/admin", serveIndex(frontendDir))
 		r.GET("/admin/*any", serveIndex(frontendDir))
+		r.GET("/user", serveIndex(frontendDir))
 		r.GET("/user/*any", serveIndex(frontendDir))
 		r.Static("/assets", filepath.Join(frontendDir, "assets"))
 		r.GET("/", func(c *gin.Context) {
