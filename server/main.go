@@ -4,6 +4,7 @@ import (
 	"log"
 	"os"
 	"path/filepath"
+	"strings"
 
 	"github.com/gin-gonic/gin"
 )
@@ -23,13 +24,27 @@ func main() {
 	frontendDir := filepath.Join("..", "web", "dist")
 
 	if _, err := os.Stat(frontendDir); err == nil {
-		r.GET("/admin", serveIndex(frontendDir))
-		r.GET("/admin/*any", serveIndex(frontendDir))
-		r.GET("/user", serveIndex(frontendDir))
-		r.GET("/user/*any", serveIndex(frontendDir))
 		r.Static("/assets", filepath.Join(frontendDir, "assets"))
-		r.GET("/", func(c *gin.Context) {
-			c.File(filepath.Join(frontendDir, "index.html"))
+
+		r.NoRoute(func(c *gin.Context) {
+			path := c.Request.URL.Path
+
+			if path == "/" {
+				c.File(filepath.Join(frontendDir, "index.html"))
+				return
+			}
+
+			if strings.HasPrefix(path, "/admin") {
+				c.File(filepath.Join(frontendDir, "index.html"))
+				return
+			}
+
+			if strings.HasPrefix(path, "/user") {
+				c.File(filepath.Join(frontendDir, "index.html"))
+				return
+			}
+
+			c.String(404, "Not Found")
 		})
 	}
 
@@ -43,17 +58,6 @@ func main() {
 	log.Println("Server starting on http://localhost:8080")
 	if err := r.Run(":8080"); err != nil {
 		log.Fatal("Failed to start server:", err)
-	}
-}
-
-func serveIndex(frontendDir string) gin.HandlerFunc {
-	return func(c *gin.Context) {
-		indexPath := filepath.Join(frontendDir, "index.html")
-		if _, err := os.Stat(indexPath); err == nil {
-			c.File(indexPath)
-		} else {
-			c.String(404, "Frontend not found")
-		}
 	}
 }
 
