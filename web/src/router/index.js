@@ -46,6 +46,46 @@ const routes = [
     name: 'AdminHome',
     component: () => import('../views/admin/Home.vue'),
     meta: { requiresAuth: true }
+  },
+  {
+    path: '/admin/workers',
+    name: 'AdminWorkers',
+    component: () => import('../views/admin/Workers.vue'),
+    meta: { requiresAuth: true }
+  },
+  {
+    path: '/admin/stats',
+    name: 'AdminStats',
+    component: () => import('../views/admin/Stats.vue'),
+    meta: { requiresAuth: true }
+  },
+  {
+    path: '/worker',
+    name: 'Worker',
+    redirect: '/worker/login'
+  },
+  {
+    path: '/worker/login',
+    name: 'WorkerLogin',
+    component: () => import('../views/worker/Login.vue')
+  },
+  {
+    path: '/worker/home',
+    name: 'WorkerHome',
+    component: () => import('../views/worker/Home.vue'),
+    meta: { requiresAuth: true }
+  },
+  {
+    path: '/worker/order/:id',
+    name: 'WorkerOrderDetail',
+    component: () => import('../views/worker/OrderDetail.vue'),
+    meta: { requiresAuth: true }
+  },
+  {
+    path: '/worker/profile',
+    name: 'WorkerProfile',
+    component: () => import('../views/worker/Profile.vue'),
+    meta: { requiresAuth: true }
   }
 ]
 
@@ -56,24 +96,28 @@ const router = createRouter({
 
 router.beforeEach((to, from, next) => {
   const isAdmin = localStorage.getItem('isAdmin') === 'true'
+  const isWorker = localStorage.getItem('isWorker') === 'true'
   const userId = localStorage.getItem('userId')
+  const workerId = localStorage.getItem('workerId')
 
   if (to.meta.requiresAuth) {
-    if (!userId) {
-      if (to.path.startsWith('/admin')) {
+    if (to.path.startsWith('/admin')) {
+      if (!userId || !isAdmin) {
         next('/admin/login')
-      } else {
-        next('/user/login')
+        return
+      }
+    } else if (to.path.startsWith('/worker')) {
+      if (!workerId || !isWorker) {
+        next('/worker/login')
+        return
       }
     } else {
-      if (to.path.startsWith('/admin') && !isAdmin) {
+      if (!userId || isAdmin || isWorker) {
         next('/user/login')
-      } else if (to.path.startsWith('/user') && isAdmin) {
-        next('/admin/home')
-      } else {
-        next()
+        return
       }
     }
+    next()
   } else {
     next()
   }

@@ -37,7 +37,42 @@ export const repairAPI = {
     api.get('/repair/all'),
 
   updateRepairStatus: (repairId, status) =>
-    api.put('/repair/status', { repair_id: repairId, status })
+    api.put('/repair/status', { repair_id: repairId, status }),
+
+  assignWorker: (repairId, workerId) =>
+    api.post('/repair/assign', { repair_id: repairId, worker_id: workerId }),
+
+  getWorkerRepairs: (workerId) =>
+    api.get('/repair/worker', { params: { worker_id: workerId } }),
+
+  acceptOrder: (repairId, workerId) =>
+    api.post('/repair/accept', { repair_id: repairId, worker_id: workerId }),
+
+  rejectOrder: (repairId, workerId) =>
+    api.post('/repair/reject', { repair_id: repairId, worker_id: workerId }),
+
+  submitRepairResult: (repairId, workerId, result, imgs) =>
+    api.post('/repair/result', { repair_id: repairId, worker_id: workerId, repair_result: result, repair_imgs: imgs }),
+
+  getWorkerStats: () =>
+    api.get('/repair/stats')
+}
+
+export const workerAPI = {
+  login: (workNo, password) =>
+    api.post('/worker/login', { work_no: workNo, password }),
+
+  getWorkers: () =>
+    api.get('/worker/list'),
+
+  createWorker: (data) =>
+    api.post('/worker/create', data),
+
+  updateWorker: (data) =>
+    api.put('/worker/update', data),
+
+  toggleStatus: (workerId) =>
+    api.put('/worker/status', { params: { worker_id: workerId } })
 }
 
 export default api

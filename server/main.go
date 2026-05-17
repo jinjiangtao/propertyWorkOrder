@@ -37,7 +37,7 @@ func main() {
 				}
 			}
 
-			if path == "/" || strings.HasPrefix(path, "/admin") || strings.HasPrefix(path, "/user") {
+			if path == "/" || strings.HasPrefix(path, "/admin") || strings.HasPrefix(path, "/user") || strings.HasPrefix(path, "/worker") {
 				c.File(filepath.Join(frontendDir, "index.html"))
 				return
 			}
@@ -52,6 +52,18 @@ func main() {
 	r.GET("/api/repair/user", GetUserRepairs)
 	r.GET("/api/repair/all", GetAllRepairs)
 	r.PUT("/api/repair/status", UpdateRepairStatus)
+	r.POST("/api/repair/assign", AssignWorker)
+	r.GET("/api/repair/worker", GetWorkerRepairs)
+	r.POST("/api/repair/accept", WorkerAcceptOrder)
+	r.POST("/api/repair/reject", WorkerRejectOrder)
+	r.POST("/api/repair/result", SubmitRepairResult)
+	r.GET("/api/repair/stats", GetWorkerStats)
+
+	r.POST("/api/worker/login", WorkerLogin)
+	r.GET("/api/worker/list", GetWorkers)
+	r.POST("/api/worker/create", CreateWorker)
+	r.PUT("/api/worker/update", UpdateWorker)
+	r.PUT("/api/worker/status", ToggleWorkerStatus)
 
 	log.Println("Server starting on http://localhost:8080")
 	if err := r.Run(":8080"); err != nil {
