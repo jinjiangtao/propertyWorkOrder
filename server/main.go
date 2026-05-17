@@ -24,22 +24,20 @@ func main() {
 	frontendDir := filepath.Join("..", "web", "dist")
 
 	if _, err := os.Stat(frontendDir); err == nil {
-		r.Static("/assets", filepath.Join(frontendDir, "assets"))
+		r.StaticFS("/assets", gin.Dir(filepath.Join(frontendDir, "assets"), false))
 
 		r.NoRoute(func(c *gin.Context) {
 			path := c.Request.URL.Path
 
-			if path == "/" {
-				c.File(filepath.Join(frontendDir, "index.html"))
-				return
+			if filepath.Ext(path) != "" {
+				filePath := filepath.Join(frontendDir, path)
+				if _, err := os.Stat(filePath); err == nil {
+					c.File(filePath)
+					return
+				}
 			}
 
-			if strings.HasPrefix(path, "/admin") {
-				c.File(filepath.Join(frontendDir, "index.html"))
-				return
-			}
-
-			if strings.HasPrefix(path, "/user") {
+			if path == "/" || strings.HasPrefix(path, "/admin") || strings.HasPrefix(path, "/user") {
 				c.File(filepath.Join(frontendDir, "index.html"))
 				return
 			}
