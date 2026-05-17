@@ -47,7 +47,6 @@ func setupTestRouter() *gin.Engine {
 	r.POST("/api/repair/accept", WorkerAcceptOrder)
 	r.POST("/api/repair/reject", WorkerRejectOrder)
 	r.POST("/api/repair/result", SubmitRepairResult)
-	
 	r.POST("/api/worker/login", WorkerLogin)
 	r.GET("/api/worker/list", GetWorkers)
 	r.POST("/api/worker/create", CreateWorker)
@@ -260,32 +259,6 @@ func TestGetAllRepairs(t *testing.T) {
 }
 
 func TestUpdateRepairStatus(t *testing.T) {
-	setupTestDB(t)
-	defer cleanupTestDB()
-	router := setupTestRouter()
-
-	body := map[string]string{"username": "testuser", "password": "testpass"}
-	jsonBody, _ := json.Marshal(body)
-	req, _ := http.NewRequest("POST", "/api/register", bytes.NewBuffer(jsonBody))
-	req.Header.Set("Content-Type", "application/json")
-	resp := httptest.NewRecorder()
-	router.ServeHTTP(resp, req)
-
-	var loginResp LoginResponse
-	json.Unmarshal(resp.Body.Bytes(), &loginResp)
-
-	repairBody := map[string]interface{}{
-		"user_id":     loginResp.UserID,
-		"username":    "testuser",
-		"repair_type": "水电维修",
-		"description": "水龙头漏水",
-	}
-	jsonBody, _ = json.Marshal(repairBody)
-	req, _ = http.NewRequest("POST", "/api/repair/create", bytes.NewBuffer(jsonBody))
-	req.Header.Set("Content-Type", "application/json")
-	resp = httptest.NewRecorder()
-	router.ServeHTTP(resp, req)
-
 	tests := []struct {
 		name       string
 		body       map[string]interface{}
@@ -319,10 +292,37 @@ func TestUpdateRepairStatus(t *testing.T) {
 
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			jsonBody, _ := json.Marshal(tt.body)
-			req, _ := http.NewRequest("PUT", "/api/repair/status", bytes.NewBuffer(jsonBody))
+			setupTestDB(t)
+			defer cleanupTestDB()
+
+			router := setupTestRouter()
+
+			registerBody := map[string]string{"username": "testuser", "password": "testpass"}
+			jsonBody, _ := json.Marshal(registerBody)
+			req, _ := http.NewRequest("POST", "/api/register", bytes.NewBuffer(jsonBody))
 			req.Header.Set("Content-Type", "application/json")
 			resp := httptest.NewRecorder()
+			router.ServeHTTP(resp, req)
+
+			var loginResp LoginResponse
+			json.Unmarshal(resp.Body.Bytes(), &loginResp)
+
+			repairBody := map[string]interface{}{
+				"user_id":     loginResp.UserID,
+				"username":    "testuser",
+				"repair_type": "水电维修",
+				"description": "水龙头漏水",
+			}
+			jsonBody, _ = json.Marshal(repairBody)
+			req, _ = http.NewRequest("POST", "/api/repair/create", bytes.NewBuffer(jsonBody))
+			req.Header.Set("Content-Type", "application/json")
+			resp = httptest.NewRecorder()
+			router.ServeHTTP(resp, req)
+
+			jsonBody, _ = json.Marshal(tt.body)
+			req, _ = http.NewRequest("PUT", "/api/repair/status", bytes.NewBuffer(jsonBody))
+			req.Header.Set("Content-Type", "application/json")
+			resp = httptest.NewRecorder()
 			router.ServeHTTP(resp, req)
 
 			if resp.Code != tt.wantStatus {
@@ -333,34 +333,35 @@ func TestUpdateRepairStatus(t *testing.T) {
 }
 
 func TestCreateWorker(t *testing.T) {
-	setupTestDB(t)
-	defer cleanupTestDB()
-	router := setupTestRouter()
-
 	tests := []struct {
 		name       string
 		body       map[string]string
 		wantStatus int
 	}{
 		{
-			name: "valid worker creation",
-			body: map[string]string{"work_no": "W001", "name": "张三", "phone": "13800138001", "password": "123456", "skill_type": "水电"},
+			name:       "valid worker creation",
+			body:       map[string]string{"work_no": "W001", "name": "张三", "phone": "13800138001", "password": "123456", "skill_type": "水电"},
 			wantStatus: http.StatusOK,
 		},
 		{
-			name: "missing work_no",
-			body: map[string]string{"name": "李四", "phone": "13800138002", "password": "123456", "skill_type": "木工"},
+			name:       "missing work_no",
+			body:       map[string]string{"name": "李四", "phone": "13800138002", "password": "123456", "skill_type": "木工"},
 			wantStatus: http.StatusBadRequest,
 		},
 		{
-			name: "duplicate work_no",
-			body: map[string]string{"work_no": "W001", "name": "王五", "phone": "13800138003", "password": "123456", "skill_type": "保洁"},
+			name:       "duplicate work_no",
+			body:       map[string]string{"work_no": "W001", "name": "王五", "phone": "13800138003", "password": "123456", "skill_type": "保洁"},
 			wantStatus: http.StatusBadRequest,
 		},
 	}
 
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
+			setupTestDB(t)
+			defer cleanupTestDB()
+
+			router := setupTestRouter()
+
 			jsonBody, _ := json.Marshal(tt.body)
 			req, _ := http.NewRequest("POST", "/api/worker/create", bytes.NewBuffer(jsonBody))
 			req.Header.Set("Content-Type", "application/json")
@@ -392,18 +393,18 @@ func TestWorkerLogin(t *testing.T) {
 		wantStatus int
 	}{
 		{
-			name: "valid worker login",
-			body: map[string]string{"work_no": "W001", "password": "123456"},
+			name:       "valid worker login",
+			body:       map[string]string{"work_no": "W001", "password": "123456"},
 			wantStatus: http.StatusOK,
 		},
 		{
-			name: "wrong password",
-			body: map[string]string{"work_no": "W001", "password": "wrongpass"},
+			name:       "wrong password",
+			body:       map[string]string{"work_no": "W001", "password": "wrongpass"},
 			wantStatus: http.StatusUnauthorized,
 		},
 		{
-			name: "non-existent worker",
-			body: map[string]string{"work_no": "W999", "password": "123456"},
+			name:       "non-existent worker",
+			body:       map[string]string{"work_no": "W999", "password": "123456"},
 			wantStatus: http.StatusUnauthorized,
 		},
 	}
@@ -424,62 +425,63 @@ func TestWorkerLogin(t *testing.T) {
 }
 
 func TestAssignWorker(t *testing.T) {
-	setupTestDB(t)
-	defer cleanupTestDB()
-	router := setupTestRouter()
-
-	registerBody := map[string]string{"username": "testuser", "password": "testpass"}
-	jsonBody, _ := json.Marshal(registerBody)
-	req, _ := http.NewRequest("POST", "/api/register", bytes.NewBuffer(jsonBody))
-	req.Header.Set("Content-Type", "application/json")
-	resp := httptest.NewRecorder()
-	router.ServeHTTP(resp, req)
-
-	var loginResp LoginResponse
-	json.Unmarshal(resp.Body.Bytes(), &loginResp)
-
-	repairBody := map[string]interface{}{
-		"user_id":     loginResp.UserID,
-		"username":    "testuser",
-		"repair_type": "水电维修",
-		"description": "水龙头漏水",
-	}
-	jsonBody, _ = json.Marshal(repairBody)
-	req, _ = http.NewRequest("POST", "/api/repair/create", bytes.NewBuffer(jsonBody))
-	req.Header.Set("Content-Type", "application/json")
-	resp = httptest.NewRecorder()
-	router.ServeHTTP(resp, req)
-
-	workerBody := map[string]string{"work_no": "W001", "name": "张三", "phone": "13800138001", "password": "123456", "skill_type": "水电"}
-	jsonBody, _ = json.Marshal(workerBody)
-	req, _ = http.NewRequest("POST", "/api/worker/create", bytes.NewBuffer(jsonBody))
-	req.Header.Set("Content-Type", "application/json")
-	resp = httptest.NewRecorder()
-	router.ServeHTTP(resp, req)
-
 	tests := []struct {
 		name       string
 		body       map[string]interface{}
 		wantStatus int
 	}{
 		{
-			name: "valid assign",
-			body: map[string]interface{}{"repair_id": 1, "worker_id": 1},
+			name:       "valid assign",
+			body:       map[string]interface{}{"repair_id": 1, "worker_id": 1},
 			wantStatus: http.StatusOK,
 		},
 		{
-			name: "invalid worker",
-			body: map[string]interface{}{"repair_id": 1, "worker_id": 999},
+			name:       "invalid worker",
+			body:       map[string]interface{}{"repair_id": 1, "worker_id": 999},
 			wantStatus: http.StatusBadRequest,
 		},
 	}
 
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			jsonBody, _ := json.Marshal(tt.body)
-			req, _ := http.NewRequest("POST", "/api/repair/assign", bytes.NewBuffer(jsonBody))
+			setupTestDB(t)
+			defer cleanupTestDB()
+
+			router := setupTestRouter()
+
+			registerBody := map[string]string{"username": "testuser", "password": "testpass"}
+			jsonBody, _ := json.Marshal(registerBody)
+			req, _ := http.NewRequest("POST", "/api/register", bytes.NewBuffer(jsonBody))
 			req.Header.Set("Content-Type", "application/json")
 			resp := httptest.NewRecorder()
+			router.ServeHTTP(resp, req)
+
+			var loginResp LoginResponse
+			json.Unmarshal(resp.Body.Bytes(), &loginResp)
+
+			repairBody := map[string]interface{}{
+				"user_id":     loginResp.UserID,
+				"username":    "testuser",
+				"repair_type": "水电维修",
+				"description": "水龙头漏水",
+			}
+			jsonBody, _ = json.Marshal(repairBody)
+			req, _ = http.NewRequest("POST", "/api/repair/create", bytes.NewBuffer(jsonBody))
+			req.Header.Set("Content-Type", "application/json")
+			resp = httptest.NewRecorder()
+			router.ServeHTTP(resp, req)
+
+			workerBody := map[string]string{"work_no": "W001", "name": "张三", "phone": "13800138001", "password": "123456", "skill_type": "水电"}
+			jsonBody, _ = json.Marshal(workerBody)
+			req, _ = http.NewRequest("POST", "/api/worker/create", bytes.NewBuffer(jsonBody))
+			req.Header.Set("Content-Type", "application/json")
+			resp = httptest.NewRecorder()
+			router.ServeHTTP(resp, req)
+
+			jsonBody, _ = json.Marshal(tt.body)
+			req, _ = http.NewRequest("POST", "/api/repair/assign", bytes.NewBuffer(jsonBody))
+			req.Header.Set("Content-Type", "application/json")
+			resp = httptest.NewRecorder()
 			router.ServeHTTP(resp, req)
 
 			if resp.Code != tt.wantStatus {
@@ -490,69 +492,70 @@ func TestAssignWorker(t *testing.T) {
 }
 
 func TestWorkerAcceptOrder(t *testing.T) {
-	setupTestDB(t)
-	defer cleanupTestDB()
-	router := setupTestRouter()
-
-	registerBody := map[string]string{"username": "testuser", "password": "testpass"}
-	jsonBody, _ := json.Marshal(registerBody)
-	req, _ := http.NewRequest("POST", "/api/register", bytes.NewBuffer(jsonBody))
-	req.Header.Set("Content-Type", "application/json")
-	resp := httptest.NewRecorder()
-	router.ServeHTTP(resp, req)
-
-	var loginResp LoginResponse
-	json.Unmarshal(resp.Body.Bytes(), &loginResp)
-
-	repairBody := map[string]interface{}{
-		"user_id":     loginResp.UserID,
-		"username":    "testuser",
-		"repair_type": "水电维修",
-		"description": "水龙头漏水",
-	}
-	jsonBody, _ = json.Marshal(repairBody)
-	req, _ = http.NewRequest("POST", "/api/repair/create", bytes.NewBuffer(jsonBody))
-	req.Header.Set("Content-Type", "application/json")
-	resp = httptest.NewRecorder()
-	router.ServeHTTP(resp, req)
-
-	workerBody := map[string]string{"work_no": "W001", "name": "张三", "phone": "13800138001", "password": "123456", "skill_type": "水电"}
-	jsonBody, _ = json.Marshal(workerBody)
-	req, _ = http.NewRequest("POST", "/api/worker/create", bytes.NewBuffer(jsonBody))
-	req.Header.Set("Content-Type", "application/json")
-	resp = httptest.NewRecorder()
-	router.ServeHTTP(resp, req)
-
-	assignBody := map[string]interface{}{"repair_id": 1, "worker_id": 1}
-	jsonBody, _ = json.Marshal(assignBody)
-	req, _ = http.NewRequest("POST", "/api/repair/assign", bytes.NewBuffer(jsonBody))
-	req.Header.Set("Content-Type", "application/json")
-	resp = httptest.NewRecorder()
-	router.ServeHTTP(resp, req)
-
 	tests := []struct {
 		name       string
 		body       map[string]interface{}
 		wantStatus int
 	}{
 		{
-			name: "valid accept",
-			body: map[string]interface{}{"repair_id": 1, "worker_id": 1},
+			name:       "valid accept",
+			body:       map[string]interface{}{"repair_id": 1, "worker_id": 1},
 			wantStatus: http.StatusOK,
 		},
 		{
-			name: "wrong worker",
-			body: map[string]interface{}{"repair_id": 1, "worker_id": 2},
+			name:       "wrong worker",
+			body:       map[string]interface{}{"repair_id": 1, "worker_id": 2},
 			wantStatus: http.StatusForbidden,
 		},
 	}
 
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			jsonBody, _ := json.Marshal(tt.body)
-			req, _ := http.NewRequest("POST", "/api/repair/accept", bytes.NewBuffer(jsonBody))
+			setupTestDB(t)
+			defer cleanupTestDB()
+
+			router := setupTestRouter()
+
+			registerBody := map[string]string{"username": "testuser", "password": "testpass"}
+			jsonBody, _ := json.Marshal(registerBody)
+			req, _ := http.NewRequest("POST", "/api/register", bytes.NewBuffer(jsonBody))
 			req.Header.Set("Content-Type", "application/json")
 			resp := httptest.NewRecorder()
+			router.ServeHTTP(resp, req)
+
+			var loginResp LoginResponse
+			json.Unmarshal(resp.Body.Bytes(), &loginResp)
+
+			repairBody := map[string]interface{}{
+				"user_id":     loginResp.UserID,
+				"username":    "testuser",
+				"repair_type": "水电维修",
+				"description": "水龙头漏水",
+			}
+			jsonBody, _ = json.Marshal(repairBody)
+			req, _ = http.NewRequest("POST", "/api/repair/create", bytes.NewBuffer(jsonBody))
+			req.Header.Set("Content-Type", "application/json")
+			resp = httptest.NewRecorder()
+			router.ServeHTTP(resp, req)
+
+			workerBody := map[string]string{"work_no": "W001", "name": "张三", "phone": "13800138001", "password": "123456", "skill_type": "水电"}
+			jsonBody, _ = json.Marshal(workerBody)
+			req, _ = http.NewRequest("POST", "/api/worker/create", bytes.NewBuffer(jsonBody))
+			req.Header.Set("Content-Type", "application/json")
+			resp = httptest.NewRecorder()
+			router.ServeHTTP(resp, req)
+
+			assignBody := map[string]interface{}{"repair_id": 1, "worker_id": 1}
+			jsonBody, _ = json.Marshal(assignBody)
+			req, _ = http.NewRequest("POST", "/api/repair/assign", bytes.NewBuffer(jsonBody))
+			req.Header.Set("Content-Type", "application/json")
+			resp = httptest.NewRecorder()
+			router.ServeHTTP(resp, req)
+
+			jsonBody, _ = json.Marshal(tt.body)
+			req, _ = http.NewRequest("POST", "/api/repair/accept", bytes.NewBuffer(jsonBody))
+			req.Header.Set("Content-Type", "application/json")
+			resp = httptest.NewRecorder()
 			router.ServeHTTP(resp, req)
 
 			if resp.Code != tt.wantStatus {
@@ -563,64 +566,141 @@ func TestWorkerAcceptOrder(t *testing.T) {
 }
 
 func TestWorkerRejectOrder(t *testing.T) {
-	setupTestDB(t)
-	defer cleanupTestDB()
-	router := setupTestRouter()
-
-	registerBody := map[string]string{"username": "testuser", "password": "testpass"}
-	jsonBody, _ := json.Marshal(registerBody)
-	req, _ := http.NewRequest("POST", "/api/register", bytes.NewBuffer(jsonBody))
-	req.Header.Set("Content-Type", "application/json")
-	resp := httptest.NewRecorder()
-	router.ServeHTTP(resp, req)
-
-	var loginResp LoginResponse
-	json.Unmarshal(resp.Body.Bytes(), &loginResp)
-
-	repairBody := map[string]interface{}{
-		"user_id":     loginResp.UserID,
-		"username":    "testuser",
-		"repair_type": "水电维修",
-		"description": "水龙头漏水",
-	}
-	jsonBody, _ = json.Marshal(repairBody)
-	req, _ = http.NewRequest("POST", "/api/repair/create", bytes.NewBuffer(jsonBody))
-	req.Header.Set("Content-Type", "application/json")
-	resp = httptest.NewRecorder()
-	router.ServeHTTP(resp, req)
-
-	workerBody := map[string]string{"work_no": "W001", "name": "张三", "phone": "13800138001", "password": "123456", "skill_type": "水电"}
-	jsonBody, _ = json.Marshal(workerBody)
-	req, _ = http.NewRequest("POST", "/api/worker/create", bytes.NewBuffer(jsonBody))
-	req.Header.Set("Content-Type", "application/json")
-	resp = httptest.NewRecorder()
-	router.ServeHTTP(resp, req)
-
-	assignBody := map[string]interface{}{"repair_id": 1, "worker_id": 1}
-	jsonBody, _ = json.Marshal(assignBody)
-	req, _ = http.NewRequest("POST", "/api/repair/assign", bytes.NewBuffer(jsonBody))
-	req.Header.Set("Content-Type", "application/json")
-	resp = httptest.NewRecorder()
-	router.ServeHTTP(resp, req)
-
 	tests := []struct {
 		name       string
 		body       map[string]interface{}
 		wantStatus int
 	}{
 		{
-			name: "valid reject",
-			body: map[string]interface{}{"repair_id": 1, "worker_id": 1},
+			name:       "valid reject",
+			body:       map[string]interface{}{"repair_id": 1, "worker_id": 1},
 			wantStatus: http.StatusOK,
 		},
 	}
 
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			jsonBody, _ := json.Marshal(tt.body)
-			req, _ := http.NewRequest("POST", "/api/repair/reject", bytes.NewBuffer(jsonBody))
+			setupTestDB(t)
+			defer cleanupTestDB()
+
+			router := setupTestRouter()
+
+			registerBody := map[string]string{"username": "testuser", "password": "testpass"}
+			jsonBody, _ := json.Marshal(registerBody)
+			req, _ := http.NewRequest("POST", "/api/register", bytes.NewBuffer(jsonBody))
 			req.Header.Set("Content-Type", "application/json")
 			resp := httptest.NewRecorder()
+			router.ServeHTTP(resp, req)
+
+			var loginResp LoginResponse
+			json.Unmarshal(resp.Body.Bytes(), &loginResp)
+
+			repairBody := map[string]interface{}{
+				"user_id":     loginResp.UserID,
+				"username":    "testuser",
+				"repair_type": "水电维修",
+				"description": "水龙头漏水",
+			}
+			jsonBody, _ = json.Marshal(repairBody)
+			req, _ = http.NewRequest("POST", "/api/repair/create", bytes.NewBuffer(jsonBody))
+			req.Header.Set("Content-Type", "application/json")
+			resp = httptest.NewRecorder()
+			router.ServeHTTP(resp, req)
+
+			workerBody := map[string]string{"work_no": "W001", "name": "张三", "phone": "13800138001", "password": "123456", "skill_type": "水电"}
+			jsonBody, _ = json.Marshal(workerBody)
+			req, _ = http.NewRequest("POST", "/api/worker/create", bytes.NewBuffer(jsonBody))
+			req.Header.Set("Content-Type", "application/json")
+			resp = httptest.NewRecorder()
+			router.ServeHTTP(resp, req)
+
+			assignBody := map[string]interface{}{"repair_id": 1, "worker_id": 1}
+			jsonBody, _ = json.Marshal(assignBody)
+			req, _ = http.NewRequest("POST", "/api/repair/assign", bytes.NewBuffer(jsonBody))
+			req.Header.Set("Content-Type", "application/json")
+			resp = httptest.NewRecorder()
+			router.ServeHTTP(resp, req)
+
+			jsonBody, _ = json.Marshal(tt.body)
+			req, _ = http.NewRequest("POST", "/api/repair/reject", bytes.NewBuffer(jsonBody))
+			req.Header.Set("Content-Type", "application/json")
+			resp = httptest.NewRecorder()
+			router.ServeHTTP(resp, req)
+
+			if resp.Code != tt.wantStatus {
+				t.Errorf("expected status %d, got %d", tt.wantStatus, resp.Code)
+			}
+		})
+	}
+}
+
+func TestWorkerSubmitResult(t *testing.T) {
+	tests := []struct {
+		name       string
+		body       map[string]interface{}
+		wantStatus int
+	}{
+		{
+			name:       "valid submit result",
+			body:       map[string]interface{}{"repair_id": 1, "worker_id": 1, "repair_result": "已维修完成", "repair_imgs": ""},
+			wantStatus: http.StatusOK,
+		},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			setupTestDB(t)
+			defer cleanupTestDB()
+
+			router := setupTestRouter()
+
+			registerBody := map[string]string{"username": "testuser", "password": "testpass"}
+			jsonBody, _ := json.Marshal(registerBody)
+			req, _ := http.NewRequest("POST", "/api/register", bytes.NewBuffer(jsonBody))
+			req.Header.Set("Content-Type", "application/json")
+			resp := httptest.NewRecorder()
+			router.ServeHTTP(resp, req)
+
+			var loginResp LoginResponse
+			json.Unmarshal(resp.Body.Bytes(), &loginResp)
+
+			repairBody := map[string]interface{}{
+				"user_id":     loginResp.UserID,
+				"username":    "testuser",
+				"repair_type": "水电维修",
+				"description": "水龙头漏水",
+			}
+			jsonBody, _ = json.Marshal(repairBody)
+			req, _ = http.NewRequest("POST", "/api/repair/create", bytes.NewBuffer(jsonBody))
+			req.Header.Set("Content-Type", "application/json")
+			resp = httptest.NewRecorder()
+			router.ServeHTTP(resp, req)
+
+			workerBody := map[string]string{"work_no": "W001", "name": "张三", "phone": "13800138001", "password": "123456", "skill_type": "水电"}
+			jsonBody, _ = json.Marshal(workerBody)
+			req, _ = http.NewRequest("POST", "/api/worker/create", bytes.NewBuffer(jsonBody))
+			req.Header.Set("Content-Type", "application/json")
+			resp = httptest.NewRecorder()
+			router.ServeHTTP(resp, req)
+
+			assignBody := map[string]interface{}{"repair_id": 1, "worker_id": 1}
+			jsonBody, _ = json.Marshal(assignBody)
+			req, _ = http.NewRequest("POST", "/api/repair/assign", bytes.NewBuffer(jsonBody))
+			req.Header.Set("Content-Type", "application/json")
+			resp = httptest.NewRecorder()
+			router.ServeHTTP(resp, req)
+
+			acceptBody := map[string]interface{}{"repair_id": 1, "worker_id": 1}
+			jsonBody, _ = json.Marshal(acceptBody)
+			req, _ = http.NewRequest("POST", "/api/repair/accept", bytes.NewBuffer(jsonBody))
+			req.Header.Set("Content-Type", "application/json")
+			resp = httptest.NewRecorder()
+			router.ServeHTTP(resp, req)
+
+			jsonBody, _ = json.Marshal(tt.body)
+			req, _ = http.NewRequest("POST", "/api/repair/result", bytes.NewBuffer(jsonBody))
+			req.Header.Set("Content-Type", "application/json")
+			resp = httptest.NewRecorder()
 			router.ServeHTTP(resp, req)
 
 			if resp.Code != tt.wantStatus {
