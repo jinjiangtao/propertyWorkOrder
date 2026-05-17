@@ -21,21 +21,12 @@ func main() {
 	r.Use(CORSMiddleware())
 
 	frontendDir := filepath.Join("..", "web", "dist")
+
 	if _, err := os.Stat(frontendDir); err == nil {
-		r.NoRoute(func(c *gin.Context) {
-			path := c.Request.URL.Path
-
-			if path == "/" || path == "" {
-				c.File(filepath.Join(frontendDir, "index.html"))
-				return
-			}
-
-			filePath := filepath.Join(frontendDir, path)
-			if _, err := os.Stat(filePath); err == nil && !filepath.IsAbs(path) {
-				c.File(filePath)
-				return
-			}
-
+		r.GET("/admin/*any", serveIndex(frontendDir))
+		r.GET("/user/*any", serveIndex(frontendDir))
+		r.Static("/assets", filepath.Join(frontendDir, "assets"))
+		r.GET("/", func(c *gin.Context) {
 			c.File(filepath.Join(frontendDir, "index.html"))
 		})
 	}
@@ -50,6 +41,17 @@ func main() {
 	log.Println("Server starting on http://localhost:8080")
 	if err := r.Run(":8080"); err != nil {
 		log.Fatal("Failed to start server:", err)
+	}
+}
+
+func serveIndex(frontendDir string) gin.HandlerFunc {
+	return func(c *gin.Context) {
+		indexPath := filepath.Join(frontendDir, "index.html")
+		if _, err := os.Stat(indexPath); err == nil {
+			c.File(indexPath)
+		} else {
+			c.String(404, "Frontend not found")
+		}
 	}
 }
 

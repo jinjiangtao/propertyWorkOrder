@@ -1,59 +1,70 @@
 <template>
-  <div class="home-container">
-    <el-container>
-      <el-header class="header">
-        <div class="header-content">
-          <h2>物业报修管理系统 - 用户中心</h2>
-          <div class="user-info">
-            <span>欢迎，{{ username }}</span>
-            <el-button type="danger" size="small" @click="handleLogout">退出登录</el-button>
-          </div>
-        </div>
-      </el-header>
-      <el-container>
-        <el-aside width="200px" class="sidebar">
-          <el-menu :default-active="activeMenu" router>
-            <el-menu-item index="/user/home">
-              <span>我的报修</span>
-            </el-menu-item>
-            <el-menu-item index="/user/repair">
-              <span>提交报修</span>
-            </el-menu-item>
-          </el-menu>
-        </el-aside>
-        <el-main class="main-content">
-          <h3>提交报修</h3>
-          <el-card class="repair-form-card">
-            <el-form :model="repairForm" :rules="rules" ref="repairFormRef" label-width="100px">
-              <el-form-item label="报修类型" prop="repairType">
-                <el-select v-model="repairForm.repairType" placeholder="请选择报修类型" style="width: 100%">
-                  <el-option label="水电维修" value="水电维修" />
-                  <el-option label="门窗维修" value="门窗维修" />
-                  <el-option label="家电维修" value="家电维修" />
-                  <el-option label="管道疏通" value="管道疏通" />
-                  <el-option label="其他" value="其他" />
-                </el-select>
-              </el-form-item>
-              <el-form-item label="报修描述" prop="description">
-                <el-input
-                  v-model="repairForm.description"
-                  type="textarea"
-                  :rows="4"
-                  placeholder="请详细描述您的问题"
-                />
-              </el-form-item>
-              <el-form-item label="图片">
-                <el-input v-model="repairForm.imageUrl" placeholder="请输入图片URL（可选）" />
-              </el-form-item>
-              <el-form-item>
-                <el-button type="primary" @click="handleSubmit" :loading="loading" style="width: 100%">提交报修</el-button>
-                <el-button @click="resetForm" style="width: 100%; margin-top: 10px">重置</el-button>
-              </el-form-item>
-            </el-form>
-          </el-card>
-        </el-main>
-      </el-container>
-    </el-container>
+  <div class="repair-container">
+    <div class="header">
+      <div class="header-content">
+        <el-button text @click="goBack" class="back-btn">← 返回</el-button>
+        <h2>提交报修</h2>
+        <div style="width: 50px;"></div>
+      </div>
+    </div>
+    
+    <div class="content">
+      <el-form :model="repairForm" :rules="rules" ref="repairFormRef" label-position="top">
+        <el-form-item label="报修类型" prop="repairType">
+          <el-select 
+            v-model="repairForm.repairType" 
+            placeholder="请选择报修类型" 
+            size="large"
+            class="type-select"
+          >
+            <el-option label="🏠 水电维修" value="水电维修" />
+            <el-option label="🚪 门窗维修" value="门窗维修" />
+            <el-option label="🔌 家电维修" value="家电维修" />
+            <el-option label="🚿 管道疏通" value="管道疏通" />
+            <el-option label="📦 其他" value="其他" />
+          </el-select>
+        </el-form-item>
+        
+        <el-form-item label="报修描述" prop="description">
+          <el-input
+            v-model="repairForm.description"
+            type="textarea"
+            :rows="6"
+            placeholder="请详细描述您的问题，例如：具体位置、故障情况等"
+            size="large"
+            class="description-input"
+          />
+          <div class="word-count">{{ repairForm.description.length }}/200</div>
+        </el-form-item>
+        
+        <el-form-item label="图片（可选）">
+          <el-input 
+            v-model="repairForm.imageUrl" 
+            placeholder="请输入图片URL（可选）"
+            size="large"
+          />
+        </el-form-item>
+        
+        <el-form-item>
+          <el-button 
+            type="primary" 
+            @click="handleSubmit" 
+            :loading="loading" 
+            size="large"
+            class="submit-button"
+          >
+            提交报修
+          </el-button>
+          <el-button 
+            @click="resetForm" 
+            size="large"
+            class="reset-button"
+          >
+            重置
+          </el-button>
+        </el-form-item>
+      </el-form>
+    </div>
   </div>
 </template>
 
@@ -81,7 +92,8 @@ const rules = {
   ],
   description: [
     { required: true, message: '请输入报修描述', trigger: 'blur' },
-    { min: 5, message: '描述至少5个字符', trigger: 'blur' }
+    { min: 5, message: '描述至少5个字符', trigger: 'blur' },
+    { max: 200, message: '描述不能超过200个字符', trigger: 'blur' }
   ]
 }
 
@@ -108,7 +120,6 @@ const handleSubmit = async () => {
 
         if (response.success) {
           ElMessage.success('报修提交成功')
-          resetForm()
           setTimeout(() => {
             router.push('/user/home')
           }, 1500)
@@ -131,10 +142,8 @@ const resetForm = () => {
   repairForm.imageUrl = ''
 }
 
-const handleLogout = () => {
-  localStorage.clear()
-  ElMessage.success('已退出登录')
-  router.push('/user/login')
+const goBack = () => {
+  router.push('/user/home')
 }
 
 onMounted(() => {
@@ -145,23 +154,31 @@ onMounted(() => {
 </script>
 
 <style scoped>
-.home-container {
+.repair-container {
+  width: 100%;
   min-height: 100vh;
+  min-height: -webkit-fill-available;
+  background: #f5f5f5;
 }
 
 .header {
-  background: #409eff;
+  background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
   color: white;
-  display: flex;
-  align-items: center;
-  padding: 0 20px;
+  padding: 20px 16px;
+  position: sticky;
+  top: 0;
+  z-index: 100;
 }
 
 .header-content {
-  width: 100%;
   display: flex;
   justify-content: space-between;
   align-items: center;
+}
+
+.back-btn {
+  color: white;
+  font-size: 16px;
 }
 
 .header h2 {
@@ -169,28 +186,83 @@ onMounted(() => {
   font-size: 20px;
 }
 
-.user-info {
-  display: flex;
-  align-items: center;
-  gap: 15px;
+.content {
+  padding: 20px 16px;
 }
 
-.sidebar {
-  background: #f5f7fa;
-  min-height: calc(100vh - 60px);
+.type-select {
+  width: 100%;
 }
 
-.main-content {
-  padding: 20px;
-  background: white;
+.type-select :deep(.el-input__wrapper) {
+  border-radius: 8px;
+  padding: 12px 16px;
 }
 
-h3 {
-  margin-bottom: 20px;
+.description-input :deep(.el-textarea__inner) {
+  border-radius: 8px;
+  padding: 12px;
+  font-size: 15px;
+  line-height: 1.6;
+}
+
+.word-count {
+  text-align: right;
+  font-size: 12px;
+  color: #999;
+  margin-top: 4px;
+}
+
+.submit-button,
+.reset-button {
+  width: 100%;
+  height: 48px;
+  font-size: 16px;
+  border-radius: 8px;
+  margin-bottom: 12px;
+}
+
+.submit-button {
+  background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+  border: none;
+}
+
+.submit-button:hover {
+  background: linear-gradient(135deg, #5a6fd6 0%, #6a4190 100%);
+}
+
+:deep(.el-form-item__label) {
+  font-size: 15px;
+  font-weight: 500;
   color: #333;
+  padding-bottom: 8px !important;
 }
 
-.repair-form-card {
-  max-width: 600px;
+:deep(.el-input__wrapper) {
+  border-radius: 8px;
+  padding: 12px 16px;
+  box-shadow: 0 0 0 1px #dcdfe6;
+}
+
+:deep(.el-input__wrapper:hover) {
+  box-shadow: 0 0 0 1px #c0c4cc;
+}
+
+:deep(.el-input__wrapper.is-focus) {
+  box-shadow: 0 0 0 1px #667eea;
+}
+
+@media screen and (min-width: 768px) {
+  .content {
+    max-width: 600px;
+    margin: 0 auto;
+    padding: 30px 20px;
+  }
+  
+  .submit-button,
+  .reset-button {
+    height: 50px;
+    font-size: 17px;
+  }
 }
 </style>

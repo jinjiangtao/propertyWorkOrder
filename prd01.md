@@ -32,3 +32,8 @@
    - 运行前端页面，打开浏览器，
       访问 http://localhost:8080/admin 后台页面
       访问 http://localhost:8080/user 前台用户页面
+
+第二轮
+通过 http://localhost:8080/admin/login 跳转到登录页面，然后刷新这个页面就空白了，解决这个问题。
+http://localhost:8080/user  页面也有同样的问题。
+user 页面改成h5-vue3的用户表达提交的样式， 在手机中展示
