@@ -24,8 +24,7 @@ func CreateRepair(c *gin.Context) {
 	}
 
 	result, err := DB.Exec(
-		`INSERT INTO repair_requests (user_id, username, repair_type, description, image_url, status, created_at, updated_at)
-		VALUES (?, ?, ?, ?, ?, '未处理', ?, ?)`,
+		"INSERT INTO repair_requests (user_id, username, repair_type, description, image_url, status, created_at, updated_at) VALUES (?, ?, ?, ?, ?, '未处理', ?, ?)",
 		req.UserID,
 		req.Username,
 		req.RepairType,
@@ -36,15 +35,15 @@ func CreateRepair(c *gin.Context) {
 	)
 
 	if err != nil {
-		c.JSON(http.StatusInternalServerError, gin.H{"error": "创建报修单失败"})
+		c.JSON(http.StatusInternalServerError, gin.H{"error": "创建报修失败"})
 		return
 	}
 
-	requestID, _ := result.LastInsertId()
+	repairID, _ := result.LastInsertId()
 	c.JSON(http.StatusOK, gin.H{
-		"success":    true,
-		"message":    "报修单创建成功",
-		"request_id": requestID,
+		"success":   true,
+		"message":    "报修提交成功",
+		"repair_id": repairID,
 	})
 }
 
@@ -62,7 +61,7 @@ func GetUserRepairs(c *gin.Context) {
 	}
 
 	rows, err := DB.Query(
-		`SELECT id, user_id, username, repair_type, description, image_url, status, created_at, updated_at
+		`SELECT id, user_id, username, repair_type, description, image_url, status, created_at, updated_at, worker_id, worker_name, repair_result, repair_imgs
 		FROM repair_requests
 		WHERE user_id = ?
 		ORDER BY created_at DESC`,
@@ -75,7 +74,7 @@ func GetUserRepairs(c *gin.Context) {
 	}
 	defer rows.Close()
 
-	var repairs []RepairRequest
+	repairs := []RepairRequest{}
 	for rows.Next() {
 		var repair RepairRequest
 		if err := rows.Scan(
@@ -88,6 +87,10 @@ func GetUserRepairs(c *gin.Context) {
 			&repair.Status,
 			&repair.CreatedAt,
 			&repair.UpdatedAt,
+			&repair.WorkerID,
+			&repair.WorkerName,
+			&repair.RepairResult,
+			&repair.RepairImgs,
 		); err != nil {
 			continue
 		}
@@ -102,7 +105,7 @@ func GetUserRepairs(c *gin.Context) {
 
 func GetAllRepairs(c *gin.Context) {
 	rows, err := DB.Query(
-		`SELECT id, user_id, username, repair_type, description, image_url, status, created_at, updated_at
+		`SELECT id, user_id, username, repair_type, description, image_url, status, created_at, updated_at, worker_id, worker_name, repair_result, repair_imgs
 		FROM repair_requests
 		ORDER BY created_at DESC`,
 	)
@@ -113,7 +116,7 @@ func GetAllRepairs(c *gin.Context) {
 	}
 	defer rows.Close()
 
-	var repairs []RepairRequest
+	repairs := []RepairRequest{}
 	for rows.Next() {
 		var repair RepairRequest
 		if err := rows.Scan(
@@ -126,6 +129,10 @@ func GetAllRepairs(c *gin.Context) {
 			&repair.Status,
 			&repair.CreatedAt,
 			&repair.UpdatedAt,
+			&repair.WorkerID,
+			&repair.WorkerName,
+			&repair.RepairResult,
+			&repair.RepairImgs,
 		); err != nil {
 			continue
 		}
@@ -427,7 +434,7 @@ func GetWorkerRepairs(c *gin.Context) {
 	}
 	defer rows.Close()
 
-	var repairs []RepairRequest
+	repairs := []RepairRequest{}
 	for rows.Next() {
 		var repair RepairRequest
 		if err := rows.Scan(
