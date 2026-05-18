@@ -129,6 +129,27 @@ func CreateWorker(c *gin.Context) {
 		return
 	}
 
+	var count int
+	err := DB.QueryRow("SELECT COUNT(*) FROM workers WHERE work_no = ?", req.WorkNo).Scan(&count)
+	if err != nil {
+		c.JSON(http.StatusInternalServerError, gin.H{"error": "检查工号失败"})
+		return
+	}
+	if count > 0 {
+		c.JSON(http.StatusBadRequest, gin.H{"error": "工号已存在"})
+		return
+	}
+
+	err = DB.QueryRow("SELECT COUNT(*) FROM workers WHERE phone = ?", req.Phone).Scan(&count)
+	if err != nil {
+		c.JSON(http.StatusInternalServerError, gin.H{"error": "检查手机号失败"})
+		return
+	}
+	if count > 0 {
+		c.JSON(http.StatusBadRequest, gin.H{"error": "手机号已存在"})
+		return
+	}
+
 	hashedPassword, err := bcrypt.GenerateFromPassword([]byte(req.Password), bcrypt.DefaultCost)
 	if err != nil {
 		c.JSON(http.StatusInternalServerError, gin.H{"error": "密码加密失败"})
@@ -146,7 +167,7 @@ func CreateWorker(c *gin.Context) {
 	)
 
 	if err != nil {
-		c.JSON(http.StatusBadRequest, gin.H{"error": "工号或手机号已存在"})
+		c.JSON(http.StatusBadRequest, gin.H{"error": "创建工人失败"})
 		return
 	}
 

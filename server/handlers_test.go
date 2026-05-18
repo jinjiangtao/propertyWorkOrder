@@ -7,7 +7,6 @@ import (
 	"fmt"
 	"net/http"
 	"net/http/httptest"
-	"os"
 	"testing"
 
 	"github.com/gin-gonic/gin"
@@ -15,9 +14,8 @@ import (
 )
 
 func setupTestDB(t *testing.T) {
-	os.Remove("./test.db")
 	var err error
-	DB, err = sql.Open("sqlite", "./test.db")
+	DB, err = sql.Open("sqlite", ":memory:")
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -30,8 +28,9 @@ func setupTestDB(t *testing.T) {
 }
 
 func cleanupTestDB() {
-	DB.Close()
-	os.Remove("./test.db")
+	if DB != nil {
+		DB.Close()
+	}
 }
 
 func setupTestRouter() *gin.Engine {
@@ -333,6 +332,10 @@ func TestUpdateRepairStatus(t *testing.T) {
 }
 
 func TestCreateWorker(t *testing.T) {
+	setupTestDB(t)
+	defer cleanupTestDB()
+	router := setupTestRouter()
+
 	tests := []struct {
 		name       string
 		body       map[string]string
@@ -353,15 +356,15 @@ func TestCreateWorker(t *testing.T) {
 			body:       map[string]string{"work_no": "W001", "name": "王五", "phone": "13800138003", "password": "123456", "skill_type": "保洁"},
 			wantStatus: http.StatusBadRequest,
 		},
+		{
+			name:       "duplicate phone",
+			body:       map[string]string{"work_no": "W002", "name": "赵六", "phone": "13800138001", "password": "123456", "skill_type": "综合维修"},
+			wantStatus: http.StatusBadRequest,
+		},
 	}
 
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			setupTestDB(t)
-			defer cleanupTestDB()
-
-			router := setupTestRouter()
-
 			jsonBody, _ := json.Marshal(tt.body)
 			req, _ := http.NewRequest("POST", "/api/worker/create", bytes.NewBuffer(jsonBody))
 			req.Header.Set("Content-Type", "application/json")
