@@ -23,7 +23,13 @@ func CreateRepair(c *gin.Context) {
 		return
 	}
 
-	result, err := DB.Exec(
+	tx, err := DB.Begin()
+	if err != nil {
+		c.JSON(http.StatusInternalServerError, gin.H{"error": "数据库事务开始失败"})
+		return
+	}
+
+	result, err := tx.Exec(
 		"INSERT INTO repair_requests (user_id, username, repair_type, description, image_url, status, created_at, updated_at) VALUES (?, ?, ?, ?, ?, '未处理', ?, ?)",
 		req.UserID,
 		req.Username,
@@ -35,14 +41,21 @@ func CreateRepair(c *gin.Context) {
 	)
 
 	if err != nil {
+		tx.Rollback()
 		c.JSON(http.StatusInternalServerError, gin.H{"error": "创建报修失败"})
+		return
+	}
+
+	if err := tx.Commit(); err != nil {
+		tx.Rollback()
+		c.JSON(http.StatusInternalServerError, gin.H{"error": "提交事务失败"})
 		return
 	}
 
 	repairID, _ := result.LastInsertId()
 	c.JSON(http.StatusOK, gin.H{
 		"success":   true,
-		"message":    "报修提交成功",
+		"message":   "报修提交成功",
 		"repair_id": repairID,
 	})
 }

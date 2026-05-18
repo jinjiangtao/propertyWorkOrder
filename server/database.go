@@ -48,8 +48,24 @@ type Worker struct {
 
 func InitDB(dbPath string) error {
 	var err error
-	DB, err = sql.Open("sqlite", dbPath)
+	DB, err = sql.Open("sqlite", dbPath+"?_journal_mode=WAL&_sync=OFF")
 	if err != nil {
+		return err
+	}
+
+	DB.SetMaxOpenConns(1)
+	DB.SetMaxIdleConns(1)
+	DB.SetConnMaxLifetime(0)
+
+	if _, err := DB.Exec("PRAGMA journal_mode=WAL;"); err != nil {
+		return err
+	}
+
+	if _, err := DB.Exec("PRAGMA synchronous=NORMAL;"); err != nil {
+		return err
+	}
+
+	if _, err := DB.Exec("PRAGMA cache_size=10000;"); err != nil {
 		return err
 	}
 
