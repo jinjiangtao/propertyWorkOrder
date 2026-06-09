@@ -60,6 +60,7 @@ const handleLogin = async () => {
           localStorage.setItem('workerId', response.worker_id)
           localStorage.setItem('workerName', response.name)
           localStorage.setItem('workerSkillType', response.skill_type)
+          localStorage.setItem('workerWorkNo', response.work_no)
           localStorage.setItem('isWorker', 'true')
           ElMessage.success('登录成功')
           router.push('/worker/home')

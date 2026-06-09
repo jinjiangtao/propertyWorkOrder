@@ -2,12 +2,24 @@ package main
 
 import (
 	"database/sql"
+	"encoding/json"
 	"log"
 	"time"
 
 	"golang.org/x/crypto/bcrypt"
 	_ "modernc.org/sqlite"
 )
+
+type NullString struct {
+	sql.NullString
+}
+
+func (ns NullString) MarshalJSON() ([]byte, error) {
+	if ns.Valid {
+		return json.Marshal(ns.String)
+	}
+	return json.Marshal("")
+}
 
 var DB *sql.DB
 
@@ -29,10 +41,10 @@ type RepairRequest struct {
 	Status       string    `json:"status"`
 	CreatedAt    time.Time `json:"created_at"`
 	UpdatedAt    time.Time `json:"updated_at"`
-	WorkerID     int64     `json:"worker_id"`
-	WorkerName   string    `json:"worker_name"`
-	RepairResult string    `json:"repair_result"`
-	RepairImgs   string    `json:"repair_imgs"`
+	WorkerID     int64      `json:"worker_id"`
+	WorkerName   NullString `json:"worker_name"`
+	RepairResult NullString `json:"repair_result"`
+	RepairImgs   NullString `json:"repair_imgs"`
 }
 
 type Worker struct {
@@ -48,7 +60,7 @@ type Worker struct {
 
 func InitDB(dbPath string) error {
 	var err error
-	DB, err = sql.Open("sqlite", dbPath+"?_journal_mode=WAL&_sync=OFF")
+	DB, err = sql.Open("sqlite", dbPath+"?_journal_mode=WAL")
 	if err != nil {
 		return err
 	}

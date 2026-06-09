@@ -99,9 +99,17 @@ const pendingOrders = ref(0)
 const loadStats = async () => {
   loading.value = true
   try {
-    const response = await repairAPI.getWorkerStats()
-    if (response.success) {
-      workerStats.value = response.data || []
+    const [statsResponse, repairsResponse] = await Promise.all([
+      repairAPI.getWorkerStats(),
+      repairAPI.getAllRepairs()
+    ])
+    if (statsResponse.success) {
+      workerStats.value = statsResponse.data || []
+    }
+    if (repairsResponse.success) {
+      const repairs = repairsResponse.data || []
+      processingOrders.value = repairs.filter(r => r.status === '处理中').length
+      pendingOrders.value = repairs.filter(r => r.status === '未处理').length
     }
   } catch (error) {
     ElMessage.error('加载统计数据失败')

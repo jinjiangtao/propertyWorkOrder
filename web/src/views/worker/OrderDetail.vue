@@ -132,9 +132,10 @@ const loadOrder = async () => {
   
   loading.value = true
   try {
-    const response = await repairAPI.getWorkerRepairs(localStorage.getItem('workerId'))
+    const response = await repairAPI.getWorkerRepairs(parseInt(localStorage.getItem('workerId')))
     if (response.success) {
-      order.value = response.data.find(o => o.id === parseInt(orderId))
+      const data = response.data || []
+      order.value = data.find(o => o.id === parseInt(orderId))
     }
   } catch (error) {
     ElMessage.error('加载工单详情失败')
@@ -151,8 +152,8 @@ const submitResult = async () => {
   
   try {
     const response = await repairAPI.submitRepairResult(
-      route.params.id,
-      localStorage.getItem('workerId'),
+      parseInt(route.params.id),
+      parseInt(localStorage.getItem('workerId')),
       resultForm.value.result,
       ''
     )

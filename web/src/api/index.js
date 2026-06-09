@@ -72,7 +72,7 @@ export const workerAPI = {
     api.put('/worker/update', data),
 
   toggleStatus: (workerId) =>
-    api.put('/worker/status', { params: { worker_id: workerId } })
+    api.put('/worker/status', null, { params: { worker_id: workerId } })
 }
 
 export default api

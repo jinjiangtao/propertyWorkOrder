@@ -1,6 +1,7 @@
 package main
 
 import (
+	"log"
 	"net/http"
 	"strconv"
 	"time"
@@ -15,11 +16,12 @@ type WorkerLoginRequest struct {
 }
 
 type WorkerLoginResponse struct {
-	Success  bool   `json:"success"`
-	Message  string `json:"message"`
-	WorkerID int64  `json:"worker_id,omitempty"`
-	Name     string `json:"name,omitempty"`
+	Success   bool   `json:"success"`
+	Message   string `json:"message"`
+	WorkerID  int64  `json:"worker_id,omitempty"`
+	Name      string `json:"name,omitempty"`
 	SkillType string `json:"skill_type,omitempty"`
+	WorkNo    string `json:"work_no,omitempty"`
 }
 
 type CreateWorkerRequest struct {
@@ -67,11 +69,12 @@ func WorkerLogin(c *gin.Context) {
 	}
 
 	response := WorkerLoginResponse{
-		Success:  true,
-		Message:  "登录成功",
-		WorkerID: worker.ID,
-		Name:     worker.Name,
+		Success:   true,
+		Message:   "登录成功",
+		WorkerID:  worker.ID,
+		Name:      worker.Name,
 		SkillType: worker.SkillType,
+		WorkNo:    worker.WorkNo,
 	}
 
 	c.JSON(http.StatusOK, response)
@@ -88,7 +91,7 @@ func GetWorkers(c *gin.Context) {
 	}
 	defer rows.Close()
 
-	var workers []Worker
+	workers := []Worker{}
 	for rows.Next() {
 		var worker Worker
 		if err := rows.Scan(
@@ -100,9 +103,15 @@ func GetWorkers(c *gin.Context) {
 			&worker.Status,
 			&worker.CreatedAt,
 		); err != nil {
+			log.Printf("扫描工人记录失败: %v", err)
 			continue
 		}
 		workers = append(workers, worker)
+	}
+	if err := rows.Err(); err != nil {
+		log.Printf("迭代工人记录出错: %v", err)
+		c.JSON(http.StatusInternalServerError, gin.H{"error": "读取工人列表失败"})
+		return
 	}
 
 	c.JSON(http.StatusOK, gin.H{
@@ -254,19 +263,8 @@ func ToggleWorkerStatus(c *gin.Context) {
 		return
 	}
 
-	var currentStatus int
-	err = DB.QueryRow("SELECT status FROM workers WHERE id = ?", workerID).Scan(&currentStatus)
-	if err != nil {
-		c.JSON(http.StatusNotFound, gin.H{"error": "工人不存在"})
-		return
-	}
-
-	newStatus := 1
-	if currentStatus == 1 {
-		newStatus = 0
-	}
-
-	result, err := DB.Exec("UPDATE workers SET status = ? WHERE id = ?", newStatus, workerID)
+	// Atomic toggle: use a single UPDATE statement
+	result, err := DB.Exec("UPDATE workers SET status = CASE WHEN status = 1 THEN 0 ELSE 1 END WHERE id = ?", workerID)
 	if err != nil {
 		c.JSON(http.StatusInternalServerError, gin.H{"error": "更新状态失败"})
 		return
@@ -277,6 +275,10 @@ func ToggleWorkerStatus(c *gin.Context) {
 		c.JSON(http.StatusNotFound, gin.H{"error": "工人不存在"})
 		return
 	}
+
+	// Read the new status for the response message
+	var newStatus int
+	DB.QueryRow("SELECT status FROM workers WHERE id = ?", workerID).Scan(&newStatus)
 
 	statusText := "启用"
 	if newStatus == 0 {

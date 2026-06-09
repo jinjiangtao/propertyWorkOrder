@@ -61,25 +61,17 @@
             </el-table-column>
             <el-table-column label="操作" width="250" fixed="right">
               <template #default="scope">
-                <el-button 
-                  v-if="scope.row.status === '未处理'" 
-                  size="small" 
-                  type="primary" 
+                <el-button
+                  v-if="scope.row.status === '未处理'"
+                  size="small"
+                  type="primary"
                   @click="handleAssign(scope.row)"
                 >
                   派单
                 </el-button>
-                <el-select
-                  v-model="scope.row.status"
-                  placeholder="更新状态"
-                  @change="handleStatusChange(scope.row)"
-                  style="width: 130px"
-                >
-                  <el-option label="未处理" value="未处理" />
-                  <el-option label="已派单" value="已派单" />
-                  <el-option label="处理中" value="处理中" />
-                  <el-option label="已完成" value="已完成" />
-                </el-select>
+                <el-tag v-else :type="getStatusType(scope.row.status)">
+                  {{ scope.row.status }}
+                </el-tag>
               </template>
             </el-table-column>
           </el-table>
